@@ -10,6 +10,11 @@ class ProductService {
     this.queryCounting = baseSQL.countAllRow("products");
   }
 
+  /**
+   * get list product with paging
+   * @param {number} page
+   * @param {number} size
+   */
   getProducts(page, size) {
     this.page = page;
     this.size = size;
@@ -52,6 +57,70 @@ class ProductService {
           reject(err);
         });
       });
+    });
+  }
+
+  /**
+   * Get product By ID
+   * @param {number} id
+   */
+  getProduct(id) {
+    return new Promise(async (resolve, reject) => {
+      const db = await con.connectDB();
+      db.one({
+        name: "find-products",
+        // text: "SELECT * FROM products WHERE id = $1",
+        text: `SELECT * FROM products 
+        JOIN images
+        ON products.image_id = images.id AND products.id = $1`,
+        values: [id],
+      })
+        .then((row) => {
+          resolve(row);
+        })
+        .catch((err) => {
+          reject(error);
+        });
+    });
+  }
+
+  /**
+   * Update product's avatar
+   * @param {number} product_id
+   * @param {number} image_id
+   */
+  updateAvatar(product_id, image_id) {
+    return new Promise(async (resolve, reject) => {
+      const db = await con.connectDB();
+      try {
+        await db.none(sql.updateProductAvatar(Number(product_id), image_id));
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        con.closeDBConnection(db);
+      }
+    });
+  }
+
+  updateProduct(product_id, data) {
+    return new Promise(async (resolve, reject) => {
+      const db = await con.connectDB();
+      const { name, price, description, category } = data;
+      try {
+        await db.none(sql.updateProduct, [
+          name,
+          price,
+          description,
+          category,
+          product_id,
+        ]);
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        con.closeDBConnection(db);
+      }
     });
   }
 }

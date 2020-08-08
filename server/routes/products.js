@@ -7,28 +7,41 @@ import fs from "fs";
 import imageSQL from "../sql/imageSQL";
 import path from "path";
 import ProductService from "../services/product.service";
+import ImageService from "../services/image.service";
+import { send } from "process";
 
 var router = express.Router();
-var imageUploader = multer({ dest: path.join(__dirname, "../public/images") });
+var imageUploader = multer({ dest: path.join(__dirname, "../../assets") });
 
 router.use("/:id", async (req, res, next) => {
   const { id } = req.params;
-  var db = await con.connectDB();
-  db.one({
-    name: "find-products",
-    text: "SELECT * FROM products WHERE id = $1",
-    values: [id],
-  })
+  const productService = new ProductService();
+  productService
+    .getProduct(id)
     .then((row) => {
       req.product_id = id;
+      req.product = row;
       next();
     })
     .catch((err) => {
-      var error = new Error("Sản phẩm không tồn tại");
-      error.status = 404;
-      next(error);
+      err.status = 404;
+      err.message = "product not found";
+      next(err);
     });
 });
+
+const checkFile = (req, res, next) => {
+  const { file } = req;
+  if (file) {
+    req.file = file;
+    next();
+  } else {
+    console.log("errror");
+    const error = new Error("File is required");
+    error.status = 400;
+    next(error);
+  }
+};
 
 /* GET product listing. */
 router.get("/", function (req, res, next) {
@@ -43,6 +56,12 @@ router.get("/", function (req, res, next) {
       console.log(err);
       next(err);
     });
+});
+
+/* GET product listing. */
+router.get("/:id", function (req, res, next) {
+  const { product } = req;
+  res.send(product);
 });
 
 /* create product. */
@@ -81,29 +100,23 @@ router.post("/", async function (req, res, next) {
   }
 });
 
-router.post(
+/* update product avatar*/
+router.put(
   "/:id/avatar",
   imageUploader.single("avatar"),
+  checkFile,
   async (req, res, next) => {
     try {
-      var db = await con.connectDB();
-      const { product_id } = req;
-      const processedFile = req.file || {}; // MULTER xử lý và gắn đối tượng FILE vào req
-      let orgName = processedFile.originalname || ""; // Tên gốc trong máy tính của người upload
-      orgName = orgName.trim().replace(/ /g, "-");
-      const fullPathInServ = processedFile.path; // Đường dẫn đầy đủ của file vừa đc upload lên server
-      const newFullPath = `${fullPathInServ}-${orgName}`; // Đổi tên của file vừa upload lên, vì multer đang đặt default ko có đuôi file
-      fs.renameSync(fullPathInServ, newFullPath);
-      const resrouceImage = imageSQL.insertImage(newFullPath);
-      const result = await db.one(resrouceImage);
-      console.log(sql.updateProduct(Number(product_id), result.id));
-      await db.none(sql.updateProduct(Number(product_id), result.id));
+      const { product_id, file } = req;
+      const imageService = new ImageService();
+      const productService = new ProductService();
+      const { newFullPath, image_id } = await imageService.insertImage(file);
+      await productService.updateAvatar(product_id, image_id);
       res.send({
         status: true,
         message: "file uploaded",
         fileNameInServer: newFullPath,
       });
-      con.closeDBConnection(db);
     } catch (error) {
       console.log(error);
       next(error);
@@ -111,4 +124,19 @@ router.post(
   }
 );
 
+router.put("/:id", async (req, res, next) => {
+  try {
+    const { product_id } = req;
+    const data= req.body;
+    const productService = new ProductService();
+    await productService.updateProduct(product_id, data);
+    res.send({
+      status: true,
+      message: "update success",
+    });
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
 export default router;

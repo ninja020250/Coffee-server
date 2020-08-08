@@ -3,10 +3,9 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 import "regenerator-runtime/runtime.js";
-import swaggerUi  from 'swagger-ui-express';
-const swaggerDocument = require('../swagger.json');
+import swaggerUi from "swagger-ui-express";
+const swaggerDocument = require("../swagger.json");
 //setup swagger
-
 
 import indexRouter from "./routes/index";
 import productRouter from "./routes/products";
@@ -21,8 +20,8 @@ app.use(express.static(path.join(__dirname, "../public")));
 
 app.use("/", indexRouter);
 app.use("/products", productRouter);
-app.use('/api-docs', swaggerUi.serve);
-app.get('/api-docs', swaggerUi.setup(swaggerDocument));
+app.use("/api-docs", swaggerUi.serve);
+app.get("/api-docs", swaggerUi.setup(swaggerDocument));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -37,7 +36,7 @@ app.use(function (err, req, res, next) {
 
   // render the error page
   res.status(err.status || 500);
-  res.render("error");
+  res.json(err);
 });
 
 export default app;
