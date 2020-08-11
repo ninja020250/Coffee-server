@@ -24,9 +24,9 @@ router.use("/:id", async (req, res, next) => {
       next();
     })
     .catch((err) => {
-      err.status = 404;
-      err.message = "product not found";
-      next(err);
+      const error = new Error("product not found");
+      error.status = 404;
+      next(error);
     });
 });
 
@@ -80,7 +80,7 @@ router.post("/", async function (req, res, next) {
       const result = await t.one(resource, [
         name,
         price,
-        image_id,
+        null,
         description,
         category,
       ]);
@@ -127,7 +127,7 @@ router.put(
 router.put("/:id", async (req, res, next) => {
   try {
     const { product_id } = req;
-    const data= req.body;
+    const data = req.body;
     const productService = new ProductService();
     await productService.updateProduct(product_id, data);
     res.send({
@@ -139,4 +139,17 @@ router.put("/:id", async (req, res, next) => {
     next(error);
   }
 });
+
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const { product_id } = req;
+    const productService = new ProductService();
+    await productService.deleteProduct(product_id);
+    res.send();
+  } catch (error) {
+    console.log(error);
+    next(error);
+  }
+});
+
 export default router;

@@ -71,15 +71,16 @@ class ProductService {
         name: "find-products",
         // text: "SELECT * FROM products WHERE id = $1",
         text: `SELECT * FROM products 
-        JOIN images
-        ON products.image_id = images.id AND products.id = $1`,
+        LEFT JOIN images
+        ON products.image_id = images.id WHERE products.id = $1`,
         values: [id],
       })
         .then((row) => {
           resolve(row);
         })
         .catch((err) => {
-          reject(error);
+          console.log(err);
+          reject(err);
         });
     });
   }
@@ -93,7 +94,9 @@ class ProductService {
     return new Promise(async (resolve, reject) => {
       const db = await con.connectDB();
       try {
-        await db.none(sql.updateProductAvatar(Number(product_id), image_id));
+        await db.none(
+          sql.updateProductAvatar(Number(product_id), Number(image_id))
+        );
         resolve();
       } catch (error) {
         reject(error);
@@ -115,6 +118,20 @@ class ProductService {
           category,
           product_id,
         ]);
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        con.closeDBConnection(db);
+      }
+    });
+  }
+
+  deleteProduct(productID) {
+    return new Promise(async (resolve, reject) => {
+      const db = await con.connectDB();
+      try {
+        await db.none(sql.deleteProduct, [productID]);
         resolve();
       } catch (error) {
         reject(error);

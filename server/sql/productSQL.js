@@ -26,10 +26,15 @@ const updateProduct = () => {
   return `UPDATE products SET name = $1, price = $2, description = $3, category = $4 WHERE id = $5`;
 };
 
+const deleteProduct = () => {
+  return `DELETE FROM products WHERE id = $1`;
+};
+
 module.exports = {
   updateProduct,
   selectProducts,
   selectProduct,
   createProduct,
   updateProductAvatar,
+  deleteProduct,
 };
